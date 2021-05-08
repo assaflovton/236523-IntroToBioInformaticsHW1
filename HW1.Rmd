@@ -1,0 +1,121 @@
+---
+title: "HomeWork 1"
+author: "Adi Falach and Assaf Lovton"
+date: "4/21/2021"
+output:
+  word_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Question 1:
+```{r}
+#1.1 mat1:
+mat1<-matrix(runif(n=24, min = 1, max=20), nrow = 4, ncol = 6)
+mat1
+
+#1.2 The sum of each Row:
+result<-apply(mat1, 1, sum)
+result
+
+#1.3 The tentative.normalization() function:
+tentative.normalization<- function(mat, npar) {
+  max_vec<-apply(mat, npar, max)
+  sweep(mat, npar, max_vec, FUN = '/')
+}
+
+#1.4 Calling for rows and columns:
+mat1.norm.rows<-tentative.normalization(mat1,1)
+mat1.norm.rows
+mat1.norm.columns<-tentative.normalization(mat1,2)
+mat1.norm.columns
+
+#1.5 Hitmap for rows and columns:
+print("Hitmap for normalized rows of mat1")
+heatmap(mat1.norm.rows,main = "mat1 normalized rows", xlab = "cloumns index", ylab="rows index")
+print("Hitmap for normalized columns of mat1")
+heatmap(mat1.norm.columns, main = "mat1 normalized columns", xlab = "cloumns index", ylab="rows index")
+```
+## Question 2:
+```{r}
+#2.1 Loading data and reading it into 2 variables:
+
+data1.file <- file.path("date1.csv", fsep="/")
+data2.file <- file.path("date2.csv", fsep="/")
+
+data1<-read.csv("data1.csv")
+data2<-read.csv("data2.csv")
+
+#2.2 Finding out the type of data1:
+class(data1)
+#As you can see the type is data frame
+
+#2.3 Separating data2 into control and treatment groups, each group contains Blood Sugar Levels:
+control_data2<- dplyr::filter(data2, Treatment == "Placebo")
+control_data2
+treatment_data2<- dplyr::filter(data2, Treatment == "HF123")
+treatment_data2
+
+#2.4 Calculating the mean difference between the control and treatment groups:
+mean_diff <- mean(control_data2$Blood_Sugar_Levels, na.rm=TRUE)-mean(treatment_data2$Blood_Sugar_Levels, na.rm=TRUE)
+mean_diff#Since it is the difference between the means there is not much insight from this value
+#we saw better ways to check our data reliability e.g. the p value
+#we can calculate the approximate error but there is not much insight from this...
+approx_error<-abs(mean_diff/mean(control_data2$Blood_Sugar_Levels,na.rm=TRUE))*100
+approx_error #the approximated error in percents
+#We can calculate the approximate error which is 12% but again there are better ways to measure this.
+
+#2.5 Showing histogram for both treatment and control groups:
+hist(as.numeric(is.na(control_data2[2])),col = "red",
+     main="Histogram of treatment(blue) and control(red) values",
+     xlab="Measurement of Blood Sugar levels")
+hist(as.numeric(is.na(treatment_data2[2])),col = "blue", add = T)
+
+#2.6 Showing boxplot for both treatment and control groups:
+study<-cbind(control_data2[2],treatment_data2[2])
+colnames(study)<-c("treatment", "control")
+boxplot(study, main = "from data2 file:")
+
+#2.7 Preforming T test:
+print(t.test(treatment_data2[2],control_data2[2]))
+
+#the T test P value result is above 0.05 therefore there is a no significant difference
+#between the treatment group and the control group
+
+#2.7 Showing boxplot for data1 and T test results:
+control_data1<- dplyr::filter(data1, Treatment == "Placebo")
+treatment_data1<- dplyr::filter(data1, Treatment == "HF123")
+study1<-data.frame(cbind(control_data1[,3],treatment_data1[,3]))
+colnames(study1)<-c("treatment", "control")
+boxplot(study1, main = "from data1 file:")
+
+#2.8 Preforming T test:
+print(t.test(treatment_data1[,3],control_data1[,3]))
+
+#the T test P value result is very close to zero (smaller than 0.05) therefore there is a true difference. And there is a true difference between the treatment and the control group.
+
+#To sum up we will trust data1 more than data2 based on the p value results, so the treatment in #data1 is providing better results.
+```
+## Question 3:
+```{r}
+suppressMessages(library("GenomicRanges"))
+
+#3 Loading data and relevant libraries:
+CLIP_data<-read.table(file.path("CLIP_data.BED"), header = TRUE)
+
+#3.1 Creating GRange object that contains the data:
+gr<- GRanges(seqnames = Rle(c(CLIP_data$chromosome)) ,
+             ranges = IRanges (start=CLIP_data$start, end = CLIP_data$end),
+             strand =CLIP_data$strand,
+             names = CLIP_data$name,
+             score = CLIP_data$score)
+gr
+
+#3.2 Flanking regions of the end of each range (width-200):
+flanked_gr <- flank(gr, width=200, start=FALSE, both=FALSE)
+flanked_gr
+```
